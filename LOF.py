@@ -20,6 +20,7 @@ class LOF:
         sum_reachability = torch.sum(self.reachability_distance(k, x_i, neighbors, distances))
         return len(neighbors) / sum_reachability
 
+    # LOF 최정 결과 도출
     def local_outlier_factor(self, k, x, distances):
         n = x.size(0)
         lof = torch.zeros(n)

@@ -51,17 +51,17 @@ k = 5
 # LOF 점수 계산
 lof_scores = lof_instance.local_outlier_factor(k, data, distances)
 
-# 임계값 설정
-threshold = 2.0
+# 원점으로부터 각 데이터 포인트의 거리 계산
+distances_from_origin = torch.norm(data, dim=1)
 
-# LOF 점수에 따라 색상 결정
-colors = ['blue' if score < threshold else 'red' for score in lof_scores]
+# +-1 범위 내에 있는 데이터 포인트를 파란색으로, 나머지를 빨간색으로 설정
+colors = ['blue' if torch.abs(distance) <= 1 else 'red' for distance in distances_from_origin]
 
 # 데이터 시각화
 plt.figure(figsize=(10, 6))
 plt.scatter(data[:, 0], data[:, 1], c=colors)
-plt.colorbar(label='Determination of defective hydrogen')
-plt.title('Data visualization according to LOF scores')
-plt.xlabel('temperature and humidiyt')
+#plt.colorbar(label='Determination of defective hydrogen')
+plt.title('Data visualization according to distance from origin')
+plt.xlabel('temperature and humidity')
 plt.ylabel('press')
 plt.show()

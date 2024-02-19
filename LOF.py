@@ -34,16 +34,10 @@ class LOF:
         return lof
 
 # 사용 예시:
-lof_instance = LOF()
-
-# 랜덤 데이터 생성
-torch.manual_seed(42)
-num_samples = 100
-num_features = 2
-data = torch.randn(num_samples, num_features)
+# lof_instance = LOF()
 
 # 모든 쌍의 거리 계산
-distances = torch.cdist(data, data)
+# distances = torch.cdist(data, data)
 
 # k 값 선택 (가장 가까운 이웃의 수)
 # k = 5

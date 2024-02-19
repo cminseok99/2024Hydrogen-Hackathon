@@ -36,7 +36,7 @@ lof_instance = LOF()
 
 # 랜덤 데이터 생성
 torch.manual_seed(42)
-num_samples = 100
+num_samples = 1000
 num_features = 2
 data = torch.randn(num_samples, num_features)
 

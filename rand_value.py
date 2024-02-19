@@ -1,14 +1,13 @@
 import torch
+import pandas as pd
 
-# 랜덤 데이터 생성
-torch.manual_seed(42)
-num_samples = 100
-num_features = 2
+# Generate random data
+random_data = torch.randn(1000, 2)
 
-#randn -> 실행될떄마다 랜덤 변수 생성
-data = torch.randn(num_samples, num_features)
+# Convert to a Pandas DataFrame
+df = pd.DataFrame(random_data.numpy(), columns=['temperature and humidity', 'press'])
 
-# 모든 쌍의 거리 계산
-distances = torch.cdist(data, data)
+# Save DataFrame to CSV
+df.to_csv('random_data.csv', index=False)
 
-print(distances)
+print("CSV file saved successfully.")

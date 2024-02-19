@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
@@ -36,7 +38,7 @@ lof_instance = LOF()
 
 # 랜덤 데이터 생성
 torch.manual_seed(42)
-num_samples = 1000
+num_samples = 100
 num_features = 2
 data = torch.randn(num_samples, num_features)
 
@@ -48,11 +50,18 @@ k = 5
 
 # LOF 점수 계산
 lof_scores = lof_instance.local_outlier_factor(k, data, distances)
+
+# 임계값 설정
+threshold = 2.0
+
+# LOF 점수에 따라 색상 결정
+colors = ['blue' if score < threshold else 'red' for score in lof_scores]
+
 # 데이터 시각화
 plt.figure(figsize=(10, 6))
-plt.scatter(data[:, 0], data[:, 1], c=lof_scores, cmap='viridis')
-plt.colorbar(label='LOF 점수')
-plt.title('LOF 점수에 따른 데이터 시각화')
-plt.xlabel('특성 1')
-plt.ylabel('특성 2')
+plt.scatter(data[:, 0], data[:, 1], c=colors)
+plt.colorbar(label='Determination of defective hydrogen')
+plt.title('Data visualization according to LOF scores')
+plt.xlabel('temperature and humidiyt')
+plt.ylabel('press')
 plt.show()

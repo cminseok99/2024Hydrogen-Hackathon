@@ -1,58 +1,122 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 import torch
-import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 
-class LOF:
-    def __init__(self):
-        pass
+class GasConcentrationDataset(Dataset):
+    def __init__(self, filename, seq_length):
+        self.seq_length = seq_length
+        self.csv = pd.read_csv(filename)
+        
+        # 데이터 정규화
+        self.scaler = MinMaxScaler()
+        self.data = self.scaler.fit_transform(self.csv.iloc[:, 1:4].values.astype('float32'))
+        self.labels = self.scaler.fit_transform(self.csv.iloc[:, -1].values.reshape(-1, 1)).flatten()
+        
+    def __len__(self):
+        return len(self.data) - self.seq_length
+
+    def __getitem__(self, idx):
+        data = self.data[idx:idx+self.seq_length]
+        label = self.labels[idx+self.seq_length]
+        return torch.tensor(data, dtype=torch.float32).permute(1, 0), torch.tensor(label, dtype=torch.float32)
+
+
+
+
+
+
+
+
+
+
+
+
+# 데이터 생성 함수
+def generate_random_gas_concentration_data(start_date, end_date):
+    num_hours = pd.date_range(start=start_date, end=end_date, freq='H').shape[0]
+    hydrogen_concentration = np.random.uniform(0.1, 0.5, num_hours)
     
-    def euclidean_distance(self, x1, x2):
-        return torch.sqrt(torch.sum((x1 - x2) ** 2, dim=1))
+    data = {
+        'timestamp': pd.date_range(start=start_date, end=end_date, freq='H'),
+        'hydrogen_concentration': hydrogen_concentration,
+    }
 
-    def k_distance(self, k, x, distances):
-        sorted_distances, _ = torch.sort(distances, dim=0)
-        return sorted_distances[k]
+    df = pd.DataFrame(data)
+    csv_filename = 'random_gas_concentration_data.csv'
+    df.to_csv(csv_filename, index=False)
+    print(f"Data generated and saved to {csv_filename}")
 
-    def reachability_distance(self, k, x_i, x_j, distances):
-        return torch.max(self.k_distance(k, x_j, distances), self.euclidean_distance(x_i, x_j))
+# 데이터 로드
+start_date = '2024-01-01'
+end_date = '2024-01-31'
+generate_random_gas_concentration_data(start_date, end_date)
 
-    def local_reachability_density(self, k, x_i, neighbors, distances):
-        sum_reachability = torch.sum(self.reachability_distance(k, x_i, neighbors, distances))
-        return len(neighbors) / sum_reachability
+# 데이터셋 및 데이터로더 생성
+seq_length = 24
+dataset = GasConcentrationDataset('randomn_data.csv', seq_length)
+dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
-    # LOF 최종 결과 도출
-    def local_outlier_factor(self, k, x, distances):
-        n = x.size(0)
-        lof = torch.zeros(n)
-        for i in range(n):
-            neighbors = torch.cat([x[:i], x[i+1:]], dim=0)
-            lrd_i = self.local_reachability_density(k, x[i], neighbors, distances[i])
-            lrd_neighbors = torch.stack([self.local_reachability_density(k, x[j], neighbors, distances[j]) for j in range(n) if j != i])
-            lof[i] = torch.mean(lrd_neighbors) / lrd_i
-        return lof
+import torch.nn as nn
 
-# 사용 예시:
-lof_instance = LOF()
+class LSTMModelWithDropout(torch.nn.Module):
+    def __init__(self, input_size, hidden_size, output_size, dropout_prob=0.5):
+        super(LSTMModelWithDropout, self).__init__()
+        self.hidden_size = hidden_size
+        self.lstm = torch.nn.LSTM(input_size, hidden_size, batch_first=True)
+        self.dropout = nn.Dropout(dropout_prob)  # 드롭아웃 레이어 추가
+        self.fc = torch.nn.Linear(hidden_size, output_size)
 
-# 랜덤 데이터 생성
-torch.manual_seed(42)
-num_samples = 100
-num_features = 2
-data = torch.randn(num_samples, num_features)
+    def forward(self, x):
+        lstm_out, _ = self.lstm(x)
+        lstm_out = self.dropout(lstm_out)  # 드롭아웃 적용
+        out = self.fc(lstm_out[:, -1, :])
+        return out
 
-# 모든 쌍의 거리 계산
-distances = torch.cdist(data, data)
 
-# k 값 선택 (가장 가까운 이웃의 수)
-k = 5
+# 모델 초기화
+input_size = 24  # 입력 차원 수 (수소 농도, 질소 농도 등)
+hidden_size = 100  # 은닉 상태 크기
+output_size = 1  # 출력 차원 수 (수소 농도 예측)
+model = LSTMModelWithDropout(input_size, hidden_size, output_size)
 
-# LOF 점수 계산
-lof_scores = lof_instance.local_outlier_factor(k, data, distances)
-# 데이터 시각화
-plt.figure(figsize=(10, 6))
-plt.scatter(data[:, 0], data[:, 1], c=lof_scores, cmap='viridis')
-plt.colorbar(label='LOF 점수')
-plt.title('LOF 점수에 따른 데이터 시각화')
-plt.xlabel('특성 1')
-plt.ylabel('특성 2')
+# 손실 함수 및 옵티마이저 설정
+criterion = torch.nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+# 모델 학습
+num_epochs = 100  # 더 많은 에폭으로 학습
+for epoch in range(num_epochs):
+    for batch_data, batch_labels in dataloader:
+        optimizer.zero_grad()
+        batch_data = batch_data.permute(1, 0, 2)
+        output = model(batch_data)
+        loss = criterion(output, batch_labels.unsqueeze(1))  # 레이블의 차원을 맞춤
+        loss.backward()
+        optimizer.step()
+    print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+
+# 테스트 데이터로 예측
+predictions = []
+labels = []
+with torch.no_grad():
+    for batch_data, batch_labels in dataloader:
+        output = model(batch_data)
+        predictions.extend(output.squeeze().tolist())
+        labels.extend(batch_labels.tolist())
+
+# 스케일러 역변환
+predictions = dataset.scaler.inverse_transform(np.array(predictions, dtype=np.float32).reshape(-1, 1))
+labels = dataset.scaler.inverse_transform(np.array(labels, dtype=np.float32).reshape(-1, 1))
+
+# 예측 결과 그래프 출력
+plt.figure(figsize=(12, 6))
+plt.plot(labels, label='Actual Hydrogen Concentration')
+plt.plot(predictions, label='Predicted Hydrogen Concentration')
+plt.title('Hydrogen Concentration Prediction')
+plt.xlabel('Time')
+plt.ylabel('Hydrogen Concentration')
+plt.legend()
 plt.show()

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data</title>
+</head>
+<body>
+    <h1>Sensor Data</h1>
+    <div id="sensor-data"></div>
+
+    <script>
+        // JSON 데이터 가져오기
+        var sensorData = {{ data|tojson }};
+        
+
+        // 데이터를 HTML에 삽입
+        var sensorDataElement = document.getElementById('sensor-data');
+        sensorDataElement.innerHTML = "<pre>" + JSON.stringify(sensorData, null, 4) + "</pre>";
+    </script>
+</body>
+</html>

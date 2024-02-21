@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature and Humidity Chart</title>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // JSON 형식의 그래프 데이터 가져오기
+        let graphJSON = {{graphJSON | safe }};
+
+        // Plotly를 사용하여 그래프 그리기
+        Plotly.newPlot('chart', graphJSON.data, graphJSON.layout);
+    </script>
+</body>
+</html>

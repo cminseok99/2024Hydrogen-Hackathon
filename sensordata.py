@@ -82,7 +82,7 @@ def plot():
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return render_template('chart.html', graphJSON=graphJSON)
 
-#create_database()
+create_database()
 sensor_thread = threading.Thread(target=store_sensor_data)
 sensor_thread.daemon = True
 sensor_thread.start()

@@ -51,19 +51,13 @@ new_sensor_data = np.array(new_sensor_data)
 # 이상치 여부 예측
 is_outlier = lof_model.predict(new_sensor_data)
 
-# 이상치 점수 계산
-outlier_scores = lof_model.score_samples(new_sensor_data)
-
-# 예측 결과 출력
+#예측결과 서버에 전송
 for i, outlier in enumerate(is_outlier):
-    if outlier == -1:
-        print(f"새로운 센서 데이터 {i+1}는 이상치입니다. (이상치 점수: {outlier_scores[i]})")
-    else:
-        print(f"새로운 센서 데이터 {i+1}는 정상입니다. (이상치 점수: {outlier_scores[i]})")
-
-
-    requests.post('주소',data=outlier)
-
+    data = {
+        'index': i + 1,
+        'outlier': outlier
+    }
+    response = requests.post('https://3d99-112-184-243-68.ngrok-free.app', json=data)
 
 
 
